@@ -1,0 +1,183 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "Student profile and enrollment information",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "schoolCode": { "type": "string" },
+        "studentId": { "type": "string" },
+        "enrolledClasses": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      },
+      "required": ["uid", "name", "email"]
+    },
+    "School": {
+      "title": "Educational Institution",
+      "description": "Details about a school or university",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "code": { "type": "string" },
+        "location": { "type": "string" },
+        "helpDesk": { "type": "string" },
+        "advisorInfo": { "type": "string" }
+      },
+      "required": ["name", "code"]
+    },
+    "Class": {
+      "title": "Academic Class",
+      "description": "Details about a specific course",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "code": { "type": "string" },
+        "schoolCode": { "type": "string" },
+        "instructor": { "type": "string" },
+        "schedule": { "type": "string" },
+        "location": { "type": "string" },
+        "description": { "type": "string" }
+      },
+      "required": ["name", "code", "instructor"]
+    },
+    "Assignment": {
+      "title": "Course Assignment",
+      "description": "Homework or group project assigned in a class",
+      "type": "object",
+      "properties": {
+        "classId": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "dueDate": { "type": "string", "format": "date-time" },
+        "type": { "type": "string", "enum": ["individual", "group"] },
+        "reminder": { "type": "string", "format": "date-time" }
+      },
+      "required": ["classId", "title", "dueDate", "type"]
+    },
+    "CampusEvent": {
+      "title": "Campus Event",
+      "description": "General events happening on campus",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "date": { "type": "string", "format": "date-time" },
+        "location": { "type": "string" },
+        "category": { "type": "string" }
+      },
+      "required": ["title", "date", "location"]
+    },
+    "Announcement": {
+      "title": "Campus Announcement",
+      "description": "University-wide updates",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "content": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "author": { "type": "string" }
+      },
+      "required": ["title", "content", "createdAt"]
+    },
+    "ClassAlarm": {
+      "title": "Class Alarm",
+      "description": "User-specific alarm for a class session",
+      "type": "object",
+      "properties": {
+        "classId": { "type": "string" },
+        "className": { "type": "string" },
+        "alarmTime": { "type": "string", "format": "date-time" },
+        "leadTimeMinutes": { "type": "integer" }
+      },
+      "required": ["classId", "className", "alarmTime"]
+    },
+    "JournalEntry": {
+      "title": "Journal Entry",
+      "description": "A private journal entry for mental health and reflection",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "title": { "type": "string" },
+        "content": { "type": "string" },
+        "mood": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "content", "createdAt"]
+    },
+    "StudyPost": {
+      "title": "Study Hub Post",
+      "description": "Collaborative post for help or resources",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "title": { "type": "string" },
+        "content": { "type": "string" },
+        "type": { "type": "string", "enum": ["help", "resource"] },
+        "category": { "type": "string" },
+        "link": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "userName", "title", "content", "type", "createdAt"]
+    },
+    "ForumMessage": {
+      "title": "Forum Message",
+      "description": "A message sent in a class discussion forum",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "content": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "userName", "content", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profile data"
+    },
+    "/schools/{schoolId}": {
+      "schema": "School",
+      "description": "School information directory"
+    },
+    "/classes/{classId}": {
+      "schema": "Class",
+      "description": "Class directory"
+    },
+    "/assignments/{assignmentId}": {
+      "schema": "Assignment",
+      "description": "All assignments across classes"
+    },
+    "/events/{eventId}": {
+      "schema": "CampusEvent",
+      "description": "Campus event listings"
+    },
+    "/announcements/{announcementId}": {
+      "schema": "Announcement",
+      "description": "General announcements"
+    },
+    "/users/{userId}/alarms/{alarmId}": {
+      "schema": "ClassAlarm",
+      "description": "Individual student class alarms"
+    },
+    "/users/{userId}/journal/{entryId}": {
+      "schema": "JournalEntry",
+      "description": "Private student journal entries"
+    },
+    "/study-hub/{postId}": {
+      "schema": "StudyPost",
+      "description": "Community shared resources and help requests"
+    },
+    "/classes/{classId}/forum/{messageId}": {
+      "schema": "ForumMessage",
+      "description": "Class-specific discussion messages"
+    }
+  }
+}

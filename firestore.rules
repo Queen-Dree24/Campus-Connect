@@ -1,0 +1,144 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 0. Default Deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Helpers ---
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && request.auth.token.email == 'patriadrea@gmail.com';
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // --- User Profiles ---
+    match /users/{userId} {
+      allow get: if isOwner(userId) || isAdmin();
+      allow list: if isAdmin();
+      allow create: if isOwner(userId) && isValidUser(incoming());
+      allow update: if isOwner(userId) && isValidUser(incoming()) && (
+        incoming().diff(existing()).affectedKeys().hasOnly(['name', 'enrolledClasses', 'schoolCode', 'studentId'])
+      );
+      
+      function isValidUser(data) {
+        return data.keys().hasAll(['uid', 'name', 'email', 'enrolledClasses']) &&
+               data.uid == request.auth.uid &&
+               data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
+               data.email is string && data.email.size() > 0 &&
+               data.enrolledClasses is list &&
+               (!('schoolCode' in data) || data.schoolCode is string || data.schoolCode == null) &&
+               (!('studentId' in data) || data.studentId is string || data.studentId == null);
+      }
+
+      match /alarms/{alarmId} {
+        allow read: if isOwner(userId);
+        allow create, update: if isOwner(userId) && isValidAlarm(incoming());
+        allow delete: if isOwner(userId);
+
+        function isValidAlarm(data) {
+          return data.keys().hasAll(['classId', 'className', 'alarmTime']) &&
+                 data.className is string && data.className.size() > 0;
+        }
+      }
+
+      match /journal/{entryId} {
+        allow read: if isOwner(userId);
+        allow create, update: if isOwner(userId) && isValidJournal(incoming());
+        allow delete: if isOwner(userId);
+
+        function isValidJournal(data) {
+          return data.keys().hasAll(['userId', 'content', 'createdAt']) &&
+                 data.userId == request.auth.uid &&
+                 data.content is string && data.content.size() > 0 &&
+                 data.createdAt == request.time;
+        }
+      }
+    }
+
+    // --- Classes ---
+    match /classes/{classId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    // --- Schools ---
+    match /schools/{schoolId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    // --- Assignments ---
+    match /assignments/{assignmentId} {
+      allow read: if isSignedIn();
+      allow update: if isSignedIn() && (
+        incoming().diff(existing()).affectedKeys().hasOnly(['reminder'])
+      );
+      allow create, delete: if isAdmin();
+    }
+
+    // --- Campus Events ---
+    match /events/{eventId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    // --- Announcements ---
+    match /announcements/{announcementId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    // --- Study Hub ---
+    match /study-hub/{postId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && isValidStudyPost(incoming());
+      allow update: if isSignedIn() && existing().userId == request.auth.uid && isValidStudyPost(incoming()) && (
+        incoming().diff(existing()).affectedKeys().hasOnly(['title', 'content', 'type', 'category', 'link'])
+      );
+      allow delete: if isSignedIn() && (existing().userId == request.auth.uid || isAdmin());
+
+      function isValidStudyPost(data) {
+        return data.keys().hasAll(['userId', 'userName', 'title', 'content', 'type', 'createdAt']) &&
+               data.userId == request.auth.uid &&
+               data.title is string && data.title.size() > 0 && data.title.size() < 200 &&
+               data.content is string && data.content.size() > 0 && data.content.size() < 10000 &&
+               (data.createdAt == request.time || data.createdAt == existing().createdAt);
+      }
+    }
+
+    // --- Forum Messages ---
+    match /classes/{classId}/forum/{messageId} {
+      allow list: if isSignedIn();
+      allow get: if isSignedIn();
+      allow create: if isSignedIn() && isValidForumMessage(incoming());
+      allow delete: if isSignedIn() && existing().userId == request.auth.uid;
+
+      function isValidForumMessage(data) {
+        return data.keys().hasAll(['userId', 'userName', 'content', 'createdAt']) &&
+               data.userId == request.auth.uid &&
+               data.content is string && data.content.size() > 0 && data.content.size() < 5000 &&
+               data.createdAt == request.time;
+      }
+    }
+  }
+}
